@@ -381,19 +381,20 @@ class Metabox {
 		$search_term      = isset( $_POST['search_term'] ) ? sanitize_text_field( wp_unslash( $_POST['search_term'] ) ) : '';
 		$postid           = isset( $_POST['postid'] ) ? absint( $_POST['postid'] ) : 0;
 		$exclude_post_ids = isset( $_POST['exclude_post_ids'] ) ? wp_parse_id_list( wp_unslash( $_POST['exclude_post_ids'] ) ) : array();
-		$relevance        = isset( $_POST['relevance'] ) ? (bool) $_POST['relevance'] : true;
+		$relevance_raw    = isset( $_POST['relevance'] ) ? sanitize_text_field( wp_unslash( $_POST['relevance'] ) ) : '1';
+		$relevance        = wp_validate_boolean( $relevance_raw );
 
-		if ( empty( $search_term ) || empty( $postid ) ) {
+		if ( empty( $search_term ) ) {
 			wp_send_json_error();
 		}
 
-		if ( ! $relevance ) {
+		if ( ! $relevance || empty( $postid ) ) {
 			$args = array(
-				'post_type'      => 'post',
+				'post_type'      => get_post_types( array( 'public' => true ) ),
 				'post_status'    => 'publish',
 				'posts_per_page' => 7,
 				's'              => $search_term,
-				'post__not_in'   => array_merge( array( $postid ), $exclude_post_ids ),
+				'post__not_in'   => array_merge( $postid ? array( $postid ) : array(), $exclude_post_ids ),
 			);
 			if ( is_numeric( $search_term ) ) {
 				$args['p'] = absint( $search_term );
@@ -414,18 +415,46 @@ class Metabox {
 				$args['include_post_ids'] = array( $search_term );
 			}
 			$posts = \get_crp_posts( $args );
+
+			if ( empty( $posts ) || ! is_array( $posts ) ) {
+				$fallback_args = array(
+					'post_type'      => get_post_types( array( 'public' => true ) ),
+					'post_status'    => 'publish',
+					'posts_per_page' => 7,
+					's'              => $search_term,
+					'post__not_in'   => array_merge( array( $postid ), $exclude_post_ids ),
+				);
+
+				if ( is_numeric( $search_term ) ) {
+					$fallback_args['p'] = absint( $search_term );
+					unset( $fallback_args['s'] );
+				}
+
+				$posts = get_posts( $fallback_args );
+			}
+		}
+
+		if ( ! is_array( $posts ) ) {
+			$posts = array();
 		}
 
 		$result = array();
 		foreach ( $posts as $post ) {
+			if ( is_numeric( $post ) ) {
+				$post = get_post( absint( $post ) );
+			}
+
+			if ( ! $post instanceof \WP_Post ) {
+				continue;
+			}
+
 			$result[] = array(
 				'id'    => $post->ID,
 				'title' => sprintf( '%1$s (%2$s)', $post->post_title, $post->ID ),
 			);
 		}
 
-		echo wp_json_encode( $result );
-		wp_die();
+		wp_send_json( $result );
 	}
 
 	/**
@@ -448,6 +477,10 @@ class Metabox {
 		}
 
 		$screen = get_current_screen();
+		if ( null === $screen ) {
+			return;
+		}
+
 		if ( 'post' === $screen->base ) {
 			wp_enqueue_script(
 				'crp-admin-metabox',
@@ -470,16 +503,50 @@ class Metabox {
 				WZ_CRP_VERSION
 			);
 
-			// Enqueue Tom Select using Settings_API method.
-			\WebberZone\Contextual_Related_Posts\Admin\Settings\Settings_API::enqueue_scripts_styles(
-				'crp',
+			if ( ! wp_style_is( 'wz-crp-tom-select', 'registered' ) ) {
+				wp_register_style(
+					'wz-crp-tom-select',
+					WZ_CRP_PLUGIN_URL . 'includes/admin/settings/css/tom-select.min.css',
+					array(),
+					\WebberZone\Contextual_Related_Posts\Admin\Settings\Settings_API::VERSION
+				);
+			}
+
+			if ( ! wp_script_is( 'wz-crp-tom-select', 'registered' ) ) {
+				wp_register_script(
+					'wz-crp-tom-select',
+					WZ_CRP_PLUGIN_URL . 'includes/admin/settings/js/tom-select.complete.min.js',
+					array( 'jquery' ),
+					\WebberZone\Contextual_Related_Posts\Admin\Settings\Settings_API::VERSION,
+					true
+				);
+			}
+
+			if ( ! wp_script_is( 'wz-crp-tom-select-init', 'registered' ) ) {
+				wp_register_script(
+					'wz-crp-tom-select-init',
+					WZ_CRP_PLUGIN_URL . "includes/admin/settings/js/tom-select-init{$file_prefix}.js",
+					array( 'jquery', 'wz-crp-tom-select' ),
+					\WebberZone\Contextual_Related_Posts\Admin\Settings\Settings_API::VERSION,
+					true
+				);
+			}
+
+			wp_localize_script(
+				'wz-crp-tom-select-init',
+				'WZTomSelectSettings',
 				array(
-					'strings' => array(
+					'endpoint' => 'category',
+					'strings'  => array(
 						/* translators: %s: search term */
 						'no_results' => esc_html__( 'No results found for "%s"', 'contextual-related-posts' ),
 					),
 				)
 			);
+
+			wp_enqueue_style( 'wz-crp-tom-select' );
+			wp_enqueue_script( 'wz-crp-tom-select' );
+			wp_enqueue_script( 'wz-crp-tom-select-init' );
 		}
 	}
 }

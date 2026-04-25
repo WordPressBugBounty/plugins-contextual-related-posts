@@ -5,7 +5,7 @@
  * A reusable API class for creating multi-step settings wizards.
  * This class provides the framework for creating guided setup experiences.
  *
- * @package WebberZone\Contextual_Related_Posts
+ * @package    WebberZone\Contextual_Related_Posts
  */
 
 namespace WebberZone\Contextual_Related_Posts\Admin\Settings;
@@ -341,7 +341,7 @@ class Settings_Wizard_API {
 		// Initialise the current step based on the URL or stored option before processing the action.
 		$this->current_step = $this->get_current_step();
 
-		$action = isset( $_POST['wizard_action'] ) ? sanitize_text_field( wp_unslash( $_POST['wizard_action'] ) ) : '';
+		$action = sanitize_text_field( wp_unslash( $_POST['wizard_action'] ) );
 
 		switch ( $action ) {
 			case 'next_step':
@@ -837,7 +837,6 @@ class Settings_Wizard_API {
 				$step_config  = $this->steps[ $step_key ];
 				$is_current   = $step_number === $this->current_step;
 				$is_completed = $step_number < $this->current_step;
-				$aria_current = $is_current ? ' aria-current="step"' : '';
 				$class_parts  = array();
 
 				if ( $is_current ) {
@@ -848,7 +847,7 @@ class Settings_Wizard_API {
 
 				$class = implode( ' ', $class_parts );
 				?>
-				<li class="<?php echo esc_attr( $class ); ?>"<?php echo $aria_current; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+				<li class="<?php echo esc_attr( $class ); ?>"<?php echo $is_current ? ' aria-current="step"' : ''; ?>>
 					<?php if ( $is_completed ) : ?>
 						<a href="<?php echo esc_url( $this->get_step_url( $step_number ) ); ?>" class="step-link">
 							<span class="step-number"><?php echo esc_html( (string) $step_number ); ?></span>

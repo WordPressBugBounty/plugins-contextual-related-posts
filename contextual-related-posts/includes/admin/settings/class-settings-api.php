@@ -5,7 +5,7 @@
  * Functions to register, read, write and update settings.
  * Portions of this code have been inspired by Easy Digital Downloads, WordPress Settings Sandbox, WordPress Settings API class, etc.
  *
- * @package WebberZone\Contextual_Related_Posts
+ * @package    WebberZone\Contextual_Related_Posts
  */
 
 namespace WebberZone\Contextual_Related_Posts\Admin\Settings;
@@ -577,8 +577,6 @@ class Settings_API {
 		wp_enqueue_script( "wz-{$prefix}-tom-select" );
 
 		$defaults = array(
-			'action'   => $prefix . '_taxonomy_search_tom_select',
-			'nonce'    => wp_create_nonce( $prefix . '_taxonomy_search_tom_select' ),
 			'endpoint' => 'category',
 			'strings'  => array(
 				'no_results' => 'No results found for "%s"',
@@ -730,11 +728,7 @@ class Settings_API {
 			}
 		}
 
-		$upgraded_settings = $this->upgraded_settings;
-
-		if ( false !== $upgraded_settings ) {
-			$options = array_merge( $options, $upgraded_settings );
-		}
+		$options = array_merge( $options, $this->upgraded_settings );
 
 		/**
 		 * Filters the default settings array.
@@ -923,7 +917,6 @@ class Settings_API {
 	 * Render the settings page.
 	 */
 	public function plugin_settings() {
-		ob_start();
 		?>
 			<div class="wrap">
 				<?php do_action( $this->prefix . '_settings_page_header_before' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound ?>
@@ -967,7 +960,6 @@ class Settings_API {
 			</div><!-- /.wrap -->
 
 			<?php
-			echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -1003,7 +995,7 @@ class Settings_API {
 
 		$html .= '</ul>';
 
-		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo wp_kses_post( $html );
 	}
 
 	/**
@@ -1012,7 +1004,6 @@ class Settings_API {
 	 * This public function displays every sections in a different form
 	 */
 	public function show_form() {
-		ob_start();
 		?>
 
 			<form method="post" action="options.php" id="<?php echo esc_attr( "{$this->prefix}-settings-form" ); ?>">
@@ -1070,7 +1061,6 @@ class Settings_API {
 			</form>
 
 			<?php
-			echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**

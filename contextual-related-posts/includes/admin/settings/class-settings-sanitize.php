@@ -288,7 +288,7 @@ class Settings_Sanitize {
 	/**
 	 * Sanitize repeater field.
 	 *
-	 * @param array $value Array of repeater values.
+	 * @param mixed $value Array of repeater values (may be non-array from form data).
 	 * @param array $field Field configuration array.
 	 * @return array Sanitized array
 	 */
@@ -418,7 +418,7 @@ class Settings_Sanitize {
 						break;
 					// Make sure sprintf has a good datatype to work with.
 					case 'integer':
-						$sp_format = '%i';
+						$sp_format = '%d';
 						break;
 					case 'double':
 						$sp_format = '%0.2f';
@@ -454,6 +454,9 @@ class Settings_Sanitize {
 		if ( isset( $settings[ $source_key ] ) ) {
 			$slugs = array_unique( str_getcsv( $settings[ $source_key ], ',', '"', '' ) );
 
+			$tax_ids   = array();
+			$tax_slugs = array();
+
 			foreach ( $slugs as $slug ) {
 				// Pattern is Name (taxonomy:term_taxonomy_id).
 				preg_match( '/(.*)\((.*):(\d+)\)/i', (string) $slug, $matches );
@@ -469,8 +472,8 @@ class Settings_Sanitize {
 				}
 			}
 
-			$settings[ $target_key ] = isset( $tax_ids ) ? join( ',', $tax_ids ) : '';
-			$settings[ $source_key ] = isset( $tax_slugs ) ? self::str_putcsv( $tax_slugs ) : '';
+			$settings[ $target_key ] = join( ',', $tax_ids );
+			$settings[ $source_key ] = self::str_putcsv( $tax_slugs );
 		}
 	}
 }
