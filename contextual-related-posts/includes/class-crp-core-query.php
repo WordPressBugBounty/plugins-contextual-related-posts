@@ -195,14 +195,15 @@ class CRP_Core_Query {
 
 		$crp_settings = crp_get_settings();
 
-		$defaults = array(
+		$defaults    = array(
 			'include_cat_ids'  => 0,
 			'include_post_ids' => null,
 			'offset'           => 0,
 			'post_id'          => false,
 		);
-		$defaults = array_merge( $defaults, $crp_settings );
-		$args     = wp_parse_args( $args, $defaults );
+		$caller_args = is_array( $args ) ? $args : wp_parse_args( $args );
+		$defaults    = array_merge( $defaults, $crp_settings );
+		$args        = wp_parse_args( $args, $defaults );
 
 		// Set the source post.
 		$post_id = $args['post_id'] ?? $args['postid'] ?? null;
@@ -278,6 +279,7 @@ class CRP_Core_Query {
 		$args['manual_related']       = $this->manual_related; // Consolidated array (includes include_post_ids).
 		$args['no_of_manual_related'] = $this->no_of_manual_related;
 
+		$args['keyword'] = isset( $args['keyword'] ) && is_string( $args['keyword'] ) ? trim( $args['keyword'] ) : '';
 		if ( empty( $args['keyword'] ) ) {
 			$args['keyword'] = crp_get_meta( $this->source_post->ID, 'keyword' );
 		}
@@ -456,12 +458,7 @@ class CRP_Core_Query {
 		 * @param array   $meta_query Array of meta_query parameters.
 		 * @param array   $args       Arguments array.
 		 */
-		$meta_query = apply_filters( 'crp_query_meta_query', $meta_query, $args ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-
-		// Validate meta_query structure.
-		if ( ! is_array( $meta_query ) ) {
-			$meta_query = array();
-		}
+		$meta_query = (array) apply_filters( 'crp_query_meta_query', $meta_query, $args ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 
 		// Add a relation key if more than one $meta_query and if 'relation' is not already set.
 		if ( count( $meta_query ) > 1 && ! isset( $meta_query['relation'] ) ) {
@@ -480,6 +477,12 @@ class CRP_Core_Query {
 
 		// Set post_status.
 		$args['post_status'] = empty( $args['post_status'] ) ? array( 'publish', 'inherit' ) : $args['post_status'];
+
+		// If posts_per_page was explicitly passed but limit was not, derive limit from posts_per_page.
+		// Skip negative values (e.g. -1 means "all posts" in WordPress) since limit is used for array_slice.
+		if ( isset( $caller_args['posts_per_page'] ) && ! array_key_exists( 'limit', $caller_args ) && (int) $caller_args['posts_per_page'] > 0 ) {
+			$args['limit'] = (int) $caller_args['posts_per_page'];
+		}
 
 		// Increase posts_per_page to fetch more posts to account for PHP exclusions.
 		if ( ! isset( $args['posts_per_page'] ) || empty( $args['posts_per_page'] ) ) {
@@ -612,7 +615,11 @@ class CRP_Core_Query {
 		$this->stuff        = implode( ' ', $match_fields_content );
 
 		// Create the base MATCH clause.
-		$match = $wpdb->prepare( ' MATCH (' . $this->match_fields . ') AGAINST (%s) ', $this->stuff ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( Helpers::is_sqlite() ) {
+			$match = $this->get_sqlite_like_sql( array_map( 'trim', explode( ',', $this->match_fields ) ) );
+		} else {
+			$match = $wpdb->prepare( ' MATCH (' . $this->match_fields . ') AGAINST (%s) ', $this->stuff ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
 
 		/**
 		 * Filter the match SQL.
@@ -629,6 +636,37 @@ class CRP_Core_Query {
 	}
 
 	/**
+	 * Build a LIKE-based fallback for the MATCH clause when running on SQLite.
+	 *
+	 * Returns a boolean expression (1/0) that is valid in SELECT, WHERE, and
+	 * ORDER BY contexts — the same three places match_sql is reused.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @param string[] $fields Column names to search.
+	 * @return string SQL fragment.
+	 */
+	private function get_sqlite_like_sql( array $fields ): string {
+		global $wpdb;
+
+		$keywords = array_filter( preg_split( '/\s+/', $this->stuff ) );
+
+		if ( empty( $keywords ) || empty( $fields ) ) {
+			return '1';
+		}
+
+		$conditions = array();
+		foreach ( $fields as $field ) {
+			foreach ( $keywords as $keyword ) {
+				$like         = '%' . $wpdb->esc_like( $keyword ) . '%';
+				$conditions[] = $wpdb->prepare( "$field LIKE %s", $like ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
+		}
+
+		return '(' . implode( ' OR ', $conditions ) . ')';
+	}
+
+	/**
 	 * Check if MySQL is currently under heavy load.
 	 *
 	 * @since 4.2.0
@@ -636,6 +674,10 @@ class CRP_Core_Query {
 	 * @return bool True if the database is considered backlogged.
 	 */
 	public function is_backlogged() {
+
+		if ( Helpers::is_sqlite() ) {
+			return false;
+		}
 
 		$threshold = absint( $this->query_args['backlog_threshold'] ?? 0 );
 
@@ -940,6 +982,7 @@ class CRP_Core_Query {
 	 * Modify the posts_orderby clause.
 	 *
 	 * @since 3.0.0
+	 * @since 4.3.0 Added deterministic tiebreakers (post date, ID) after the relevance score.
 	 *
 	 * @param string               $orderby  The ORDER BY clause of the query.
 	 * @param \WP_Query|\CRP_Query $query The WP_Query or CRP_Query instance.
@@ -960,7 +1003,7 @@ class CRP_Core_Query {
 				if ( empty( $this->match_sql ) ) {
 					$this->match_sql = $this->get_match_sql();
 				}
-				$orderby = ' ' . $this->match_sql . ' DESC ';
+				$orderby = ' ' . $this->match_sql . " DESC, $wpdb->posts.post_date DESC, $wpdb->posts.ID DESC ";
 			}
 			return apply_filters( 'crp_query_posts_orderby', $orderby, $query );
 		}
@@ -987,6 +1030,12 @@ class CRP_Core_Query {
 		if ( isset( $this->query_args['ordering'] ) && 'date' === $this->query_args['ordering'] ) {
 			$orderby_clauses[] = " $wpdb->posts.post_date DESC ";
 		}
+
+		// Deterministic tiebreakers so that posts with equal relevance scores are returned in a stable order.
+		if ( 'date' !== ( $this->query_args['ordering'] ?? '' ) ) {
+			$orderby_clauses[] = " $wpdb->posts.post_date DESC ";
+		}
+		$orderby_clauses[] = " $wpdb->posts.ID DESC ";
 
 		/**
 		 * Filters the posts_orderby of CRP_Query after processing and before returning.

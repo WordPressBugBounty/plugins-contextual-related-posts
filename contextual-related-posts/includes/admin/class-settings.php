@@ -125,7 +125,10 @@ class Settings {
 			'save_changes'         => esc_html__( 'Save Changes', 'contextual-related-posts' ),
 			'reset_settings'       => esc_html__( 'Reset all settings', 'contextual-related-posts' ),
 			'reset_button_confirm' => esc_html__( 'Do you really want to reset all these settings to their default values?', 'contextual-related-posts' ),
-			'checkbox_modified'    => esc_html__( 'Modified from default setting', 'contextual-related-posts' ),
+			'modified_field'       => esc_html__( 'Modified from default setting', 'contextual-related-posts' ),
+			'modified_legend'      => esc_html__( 'Setting modified from its default value', 'contextual-related-posts' ),
+			'default_label'        => esc_html__( 'Default', 'contextual-related-posts' ),
+			'default_none'         => esc_html__( 'None', 'contextual-related-posts' ),
 		);
 
 		/**
@@ -340,6 +343,14 @@ class Settings {
 				'desc'    => esc_html__( 'If selected, the meta box will be hidden from anyone who is not an Admin. By default, Contributors and above will be able to see the meta box. Applies only if the above option is selected.', 'contextual-related-posts' ),
 				'type'    => 'checkbox',
 				'default' => false,
+			),
+			'metabox_post_types'           => array(
+				'id'      => 'metabox_post_types',
+				'name'    => esc_html__( 'Show metabox on these post types', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Select the post types on which the Contextual Related Posts metabox should be displayed. If none are selected, the metabox will be shown on all public post types.', 'contextual-related-posts' ),
+				'type'    => 'posttypes',
+				'default' => '',
+				'pro'     => true,
 			),
 			'show_credit'                  => array(
 				'id'      => 'show_credit',
@@ -1267,6 +1278,64 @@ class Settings {
 				'default' => false,
 				'pro'     => true,
 			),
+			'wc_cart_header'          => array(
+				'id'   => 'wc_cart_header',
+				'name' => '<h3>' . esc_html__( 'Cart Related Products', 'contextual-related-posts' ) . '</h3>',
+				'desc' => esc_html__( 'Show related products on the cart page when the cart total is below the free shipping threshold, nudging customers to add one more item for free shipping.', 'contextual-related-posts' ),
+				'type' => 'header',
+			),
+			'wc_cart_enable'          => array(
+				'id'      => 'wc_cart_enable',
+				'name'    => esc_html__( 'Enable cart related products', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Display related products on the cart page when the cart subtotal is below the free shipping minimum.', 'contextual-related-posts' ),
+				'type'    => 'checkbox',
+				'default' => false,
+				'pro'     => true,
+			),
+			'wc_cart_limit'           => array(
+				'id'      => 'wc_cart_limit',
+				'name'    => esc_html__( 'Number of cart related products', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Maximum number of products to show in the cart related products section.', 'contextual-related-posts' ),
+				'type'    => 'number',
+				'default' => 4,
+				'min'     => 1,
+				'size'    => 'small',
+				'pro'     => true,
+			),
+			'wc_cart_upper_bound_pct' => array(
+				'id'      => 'wc_cart_upper_bound_pct',
+				'name'    => esc_html__( 'Price upper bound (%)', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Products are limited to prices between the gap-to-free-shipping and gap × (1 + this %). Example: gap = $20, 20% → shows products priced $20–$24.', 'contextual-related-posts' ),
+				'type'    => 'number',
+				'default' => 20,
+				'min'     => 0,
+				'max'     => 200,
+				'size'    => 'small',
+				'pro'     => true,
+			),
+			'wc_cart_heading'         => array(
+				'id'      => 'wc_cart_heading',
+				'name'    => esc_html__( 'Cart section heading', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Heading above the cart related products. Leave empty to use the automatic "Add $X more for free shipping" message.', 'contextual-related-posts' ),
+				'type'    => 'text',
+				'default' => '',
+				'size'    => 'regular',
+				'pro'     => true,
+			),
+			'wc_cart_hook'            => array(
+				'id'      => 'wc_cart_hook',
+				'name'    => esc_html__( 'Cart display position', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'WooCommerce action hook where the section is injected on the classic cart page.', 'contextual-related-posts' ),
+				'type'    => 'select',
+				'default' => 'woocommerce_after_cart_table',
+				'options' => array(
+					'woocommerce_after_cart_table'        => esc_html__( 'After cart table', 'contextual-related-posts' ),
+					'woocommerce_before_cart_collaterals' => esc_html__( 'Before cart collaterals', 'contextual-related-posts' ),
+					'woocommerce_cart_collaterals'        => esc_html__( 'Cart collaterals (sidebar)', 'contextual-related-posts' ),
+					'woocommerce_after_cart'              => esc_html__( 'After cart section', 'contextual-related-posts' ),
+				),
+				'pro'     => true,
+			),
 		);
 
 		/**
@@ -1339,6 +1408,14 @@ class Settings {
 				'desc' => esc_html__( 'Settings for optimizing performance', 'contextual-related-posts' ),
 				'type' => 'header',
 			),
+			'lazy_load'            => array(
+				'id'      => 'lazy_load',
+				'name'    => esc_html__( 'Lazy load related posts', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Load the related posts using JavaScript only when they are about to enter the viewport. This speeds up the initial page load and plays better with page caching plugins. Note: search engines may not index the related posts links when this is enabled. Applies to all display methods: content, shortcode, widget and the Related Posts block. The Query Loop block variation is rendered by WordPress core and is not lazy loaded. Use lazy_load="0" in the shortcode to disable it per instance. Not applied on feeds and AMP pages.', 'contextual-related-posts' ),
+				'type'    => 'checkbox',
+				'default' => false,
+				'pro'     => true,
+			),
 			'cache_posts'          => array(
 				'id'      => 'cache_posts',
 				'name'    => esc_html__( 'Cache posts only', 'contextual-related-posts' ),
@@ -1352,6 +1429,13 @@ class Settings {
 				'desc'    => esc_html__( 'Enabling this will cache the entire HTML generated when the post is visited the first time. The cache is cleaned when you save this page. Highly recommended particularly on busy sites. Default is true.', 'contextual-related-posts' ),
 				'type'    => 'checkbox',
 				'default' => true,
+			),
+			'clear_cache_on_trash' => array(
+				'id'      => 'clear_cache_on_trash',
+				'name'    => esc_html__( 'Clear cache when a post is trashed or restored', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'When enabled, the entire CRP cache will be cleared whenever a post is moved to Trash or restored from Trash.', 'contextual-related-posts' ),
+				'type'    => 'checkbox',
+				'default' => false,
 			),
 			'cache_time'           => array(
 				'id'      => 'cache_time',
@@ -1911,14 +1995,12 @@ class Settings {
 		}
 
 		if ( 'public_taxonomies' === $endpoint ) {
-			$taxonomies = (array) get_taxonomies( array( 'public' => true ), 'objects' );
+			$taxonomies = get_taxonomies( array( 'public' => true ), 'objects' );
 			$taxonomy   = array();
 			$tax        = null;
 
-			foreach ( $taxonomies as $taxonomy_name => $taxonomy_object ) {
-				if ( ! is_string( $taxonomy_name ) || '' === $taxonomy_name ) {
-					continue;
-				}
+			foreach ( $taxonomies as $taxonomy_object ) {
+				$taxonomy_name = $taxonomy_object->name;
 
 				if ( empty( $taxonomy_object->cap->assign_terms ) ) {
 					continue;

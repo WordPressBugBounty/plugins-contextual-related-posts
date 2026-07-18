@@ -66,10 +66,8 @@ class Metabox {
 			return;
 		}
 
-		$args       = array(
-			'public' => true,
-		);
-		$post_types = get_post_types( $args );
+		$metabox_post_types = \crp_get_option( 'metabox_post_types' );
+		$post_types         = $metabox_post_types ? wp_parse_list( $metabox_post_types ) : get_post_types( array( 'public' => true ), 'names' );
 
 		/**
 		 * Filter post types on which the meta box is displayed
@@ -416,7 +414,7 @@ class Metabox {
 			}
 			$posts = \get_crp_posts( $args );
 
-			if ( empty( $posts ) || ! is_array( $posts ) ) {
+			if ( empty( $posts ) ) {
 				$fallback_args = array(
 					'post_type'      => get_post_types( array( 'public' => true ) ),
 					'post_status'    => 'publish',
@@ -432,10 +430,6 @@ class Metabox {
 
 				$posts = get_posts( $fallback_args );
 			}
-		}
-
-		if ( ! is_array( $posts ) ) {
-			$posts = array();
 		}
 
 		$result = array();
