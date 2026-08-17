@@ -106,6 +106,20 @@
 	display: none;
 }
 
+/* Disabled / pro-gated repeater: the subfields and the repeater's own buttons each
+   carry a disabled attribute, which is what actually blocks interaction. These rules
+   only supply the matching visual affordance on the wrapper, which cannot be disabled. */
+.wz-repeater-disabled .add-item,
+.wz-repeater-disabled .repeater-item-actions .button {
+	pointer-events: none;
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.wz-repeater-disabled .add-item:hover {
+	background-color: #0073aa;
+}
+
 /* Responsiveness for smaller screens */
 @media screen and (max-width: 768px) {
 	.wz-repeater-wrapper {
@@ -334,10 +348,32 @@
 	opacity: 0.5;
 }
 
+/*
+ * Settings page layout: content + sidebar, side by side.
+ *
+ * WP core lays out #post-body-content and #postbox-container-1 via floats, but a float can
+ * only avoid floats that precede it in source order — #post-body-content comes first, so it
+ * has nothing to avoid and renders at full width, overlapping the sidebar that floats beside
+ * it. Flexbox sidesteps the ordering problem entirely and (with align-items: flex-start) still
+ * lets the sidebar be shorter than the tab content, matching the old float layout's look.
+ */
+#post-body.wz-settings-post-body {
+	display: flex;
+	align-items: flex-start;
+	gap: 24px;
+}
+
+#post-body.wz-settings-post-body > #postbox-container-1 {
+	flex: 0 0 280px;
+	width: 280px;
+}
+
 /* Vertical settings tabs. */
 .wz-vertical-tabs {
 	display: flex;
 	align-items: flex-start;
+	flex: 1 1 auto;
+	min-width: 0;
 	gap: 24px;
 }
 
@@ -413,6 +449,10 @@
 
 /* Horizontal tabs on small screens (WP admin breakpoint); pills keep their style. */
 @media screen and (max-width: 782px) {
+	#post-body.wz-settings-post-body {
+		display: block;
+	}
+
 	.wz-vertical-tabs {
 		display: block;
 	}
@@ -425,6 +465,161 @@
 		position: static;
 		margin-bottom: 16px;
 	}
+
+	.wz-vertical-tabs > ul.nav-tab-wrapper .wz-settings-search-wrap {
+		flex: 1 1 100%;
+	}
+}
+
+/* Settings search. */
+.wz-vertical-tabs > ul.nav-tab-wrapper .wz-settings-search-wrap {
+	margin: 0 0 8px;
+	padding: 0;
+}
+
+.wz-settings-search-box {
+	position: relative;
+	display: block;
+}
+
+.wz-settings-search {
+	width: 100%;
+	margin: 0;
+	padding: 4px 28px 4px 8px;
+	border: 1px solid #8c8f94;
+	border-radius: 3px;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.wz-settings-search:focus {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+	outline: none;
+}
+
+/* Hide the native WebKit clear control; the plugin renders its own clear button. */
+.wz-settings-search::-webkit-search-cancel-button {
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+.wz-settings-search-clear {
+	position: absolute;
+	top: 50%;
+	right: 4px;
+	transform: translateY(-50%);
+	margin: 0;
+	padding: 0 6px;
+	border: 0;
+	border-radius: 2px;
+	background: transparent;
+	color: #646970;
+	cursor: pointer;
+	font-size: 18px;
+	line-height: 1.2;
+}
+
+.wz-settings-search-clear:hover {
+	color: #d63638;
+}
+
+.wz-settings-search-clear:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 1px;
+}
+
+.wz-settings-search-clear[hidden] {
+	display: none;
+}
+
+/* Rows filtered out by the search. */
+.wz-search-hidden {
+	display: none !important;
+}
+
+/* While searching, show every tab panel that has matches and hide the rest. */
+.wz-vertical-tabs.wz-searching > form > div {
+	display: none !important;
+}
+
+.wz-vertical-tabs.wz-searching > form > div.wz-has-matches {
+	display: block !important;
+	margin-bottom: 24px;
+}
+
+/* Hide the per-tab button rows and legends while searching; a single save bar is shown instead. */
+.wz-vertical-tabs.wz-searching > form > div.wz-has-matches > p {
+	display: none;
+}
+
+.wz-vertical-tabs.wz-searching > form > div.wz-has-matches > table.form-table {
+	margin-top: 0;
+}
+
+/* Per-tab section title: hidden normally, shown while searching to identify each group of results. */
+.wz-section-title {
+	display: none;
+}
+
+.wz-vertical-tabs.wz-searching .wz-section-title {
+	display: block;
+	margin: 0;
+	padding: 6px 10px;
+	background: #f0f0f1;
+	border-left: 4px solid #2271b1;
+	color: #50575e;
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+/* Single sticky save bar shown while search results are displayed. */
+.wz-search-actions {
+	position: sticky;
+	bottom: 0;
+	margin: 0;
+	padding: 12px 0;
+	background: linear-gradient(to bottom, rgba(240, 240, 241, 0), #f0f0f1 40%);
+}
+
+/* Match-count badge on the navigation tabs. */
+.wz-tab-count {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 0 6px;
+	border-radius: 9px;
+	background-color: #2271b1;
+	color: #fff;
+	font-size: 11px;
+	line-height: 18px;
+	vertical-align: middle;
+}
+
+.wz-vertical-tabs > ul.nav-tab-wrapper .nav-tab-active .wz-tab-count {
+	background-color: #fff;
+	color: #2271b1;
+}
+
+.wz-vertical-tabs > ul.nav-tab-wrapper .wz-tab-no-matches {
+	opacity: 0.45;
+}
+
+/* Highlighted search term in row labels. */
+mark.wz-search-mark {
+	padding: 0;
+	background-color: #fff3ad;
+	color: inherit;
+}
+
+/* No results message. */
+.wz-search-no-results {
+	margin: 16px 0;
+	padding: 12px;
+	background: #fff;
+	border-left: 4px solid #dba617;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
 }
 
 /* Modified-from-default indicator. */
@@ -462,4 +657,6 @@ form > div:not(:has(.form-table .wz-modified-dot)) .wz-modified-legend {
 .wz-default-value code {
 	font-size: 11px;
 	padding: 1px 5px;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }

@@ -92,7 +92,14 @@ class Tools_Page {
 		?>
 	<div class="wrap">
 		<h1><?php esc_html_e( 'Contextual Related Posts Tools', 'contextual-related-posts' ); ?></h1>
-		<?php do_action( 'crp_tools_page_header' ); ?>
+		<?php
+		/**
+		 * Fires just below the heading on the Contextual Related Posts tools page.
+		 *
+		 * @since 4.0.0
+		 */
+		do_action( 'crp_tools_page_header' );
+		?>
 
 		<?php settings_errors(); ?>
 
@@ -234,7 +241,7 @@ class Tools_Page {
 
 			<?php
 			/**
-			 * Action hook to add additional tools page content.
+			 * Action hook to add additional content to the Contextual Related Posts tools page.
 			 *
 			 * @since 4.0.0
 			 */
@@ -270,13 +277,21 @@ class Tools_Page {
 
 		$old_indexes = Db::get_old_fulltext_indexes();
 		$new_indexes = Db::get_fulltext_indexes();
-		$all_indexes = array_keys( array_merge( $old_indexes, $new_indexes ) );
+
+		// Aliases are included so a sibling plugin's legacy index is migrated, not left alongside.
+		$all_indexes = array_unique(
+			array_merge(
+				array_keys( $old_indexes ),
+				array_keys( $new_indexes ),
+				array_values( Db::get_legacy_index_aliases() )
+			)
+		);
 
 		$sql = array();
 
 		// Add DROP statements for all possible indexes.
 		foreach ( $all_indexes as $index ) {
-			if ( Db::is_index_installed( $index ) ) {
+			if ( Db::index_exists( $index ) ) {
 				$sql[] = "ALTER TABLE {$wpdb->posts} DROP INDEX {$index};";
 			}
 		}
