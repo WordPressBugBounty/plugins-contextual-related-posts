@@ -2,7 +2,7 @@
 Tags: related posts, related, contextual related posts, similar posts, seo
 Contributors: webberzone, ajay
 Donate link: https://wzn.io/donate-crp
-Stable tag: 4.3.1
+Stable tag: 4.4.0
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -65,6 +65,14 @@ Two options on the settings page allow you to remove these indices when deactiva
 * [Advanced Algorithm](https://webberzone.com/support/knowledgebase/contextual-related-posts-algorithm/): Control exactly how relevant content is found by adjusting weights for title, content, and excerpt.
 * [Taxonomy Weight System](https://webberzone.com/support/knowledgebase/contextual-related-posts-algorithm/#weighting-categories-tags-and-taxonomies): Refine your matches with precise taxonomy weighting for perfect content relationships.
 * __Keyword Override for Blocks__: Set a word or phrase on the Related Posts block or the CRP Query Loop block to find related posts using that keyword instead of the current post's title and content.
+
+#### 🧩 Page Builder Integrations (experimental)
+
+These integrations are new in 4.4.0 and marked experimental while they get real-world use. They are safe to use on a live site, but if one of them misbehaves in your setup, please [report it on Github](https://github.com/WebberZone/contextual-related-posts/issues).
+
+* __WPBakery Page Builder__: A native "Related Posts (CRP)" element under its own "WebberZone" tab in the Add Element panel, covering the same options as the `[crp]` shortcode plus custom CSS class/CSS — works in both Classic Mode and the Frontend Editor.
+* __Elementor__: A native "Related Posts (CRP)" widget under its own "WebberZone" category, editable live from the widget panel and preview.
+* __Bricks Builder__: A native "Related Posts (CRP)" element under its own "WebberZone" category, covering the same options as the `[crp]` shortcode with live dynamic data support.
 
 #### 🛒 WooCommerce Integration
 
@@ -195,6 +203,38 @@ If you enable thumbnails, the plugin will try to find the correct thumbnail in t
 The plugin also handles SSL, resizing, and fallback mechanisms automatically for each step.
 
 == Changelog ==
+
+= 4.4.0 =
+
+*Release Date - 29 August 2026*
+
+Release post: [https://webberzone.com/contextual-related-posts-v4-4/](https://webberzone.com/contextual-related-posts-v4-4/)
+
+* New features:
+	* [Pro] WPBakery, Elementor and Bricks Builder integrations (experimental): a native "Related Posts (CRP)" element/widget in each builder with the full set of CRP options. Feedback and bug reports are welcome while these settle in.
+	* [Pro] New "Use precomputed taxonomy score" setting under the taxonomy weights. With Enhanced Content Search Index enabled, the taxonomy score is read from the indexed `tax_score` column instead of being calculated per query. Faster, but live queries then ignore the per-taxonomy weights.
+
+* Modifications:
+	* [Pro] Page builder integrations now load through a new `Builders\Builders` dispatcher.
+	* The site-wide "Exclude terms" setting is now applied to the related posts query; it was previously only honored per post in the metabox.
+	* "Exclude terms" now splits on commas only, so `black friday` is matched as a phrase rather than as two separate words.
+	* Renamed "Include only posts that contain these words" to "Also match posts that contain these words" to match what the option actually does.
+	* The REST API `limit` parameter is now capped at 100. Use the new `crp_rest_api_max_limit` filter to change the maximum.
+
+* Bug fixes:
+	* Fixed stopword stripping failing when the stopword list contained a `/`.
+	* Fixed style stylesheets always being enqueued for the default style instead of the requested one.
+	* Fixed plugin data being deleted when uninstalling one version while its paired free or Pro counterpart was active.
+	* [Pro] Fixed the cache colliding across differently-configured shortcode/widget/block/builder calls on the same post.
+	* [Pro] Fixed "Order by: Date" being overridden by relevance ordering, and an `Unknown column 'score'` error when contextual matching was disabled with Include words set.
+	* [Pro] Fixed taxonomy term-count sorting being applied after the date sort instead of before it.
+	* [Pro] Fixed `orderby="relevance"` using the unweighted core match instead of the Pro weighted score.
+	* Fixed the contextual match SQL being built twice on every query.
+	* Fixed "Exclude terms" ignoring the post content when content matching was enabled.
+	* Fixed HTML entities surviving tag stripping, so `&amp;`, `&nbsp;` and `&hellip;` were indexed as the words "amp", "nbsp" and "hellip".
+	* Fixed the per-request post meta cache being keyed on post ID alone, so the same post ID on two sites of a multisite network shared one cache entry.
+	* Fixed schema changes not reaching existing installs: `dbDelta()` now runs on version upgrades instead of on activation only.
+	* Fixed the feed thumbnail size settings being ignored. The configured width and height are now passed to the feed output, and both must be greater than 0 for a size to be applied.
 
 = 4.3.1 =
 
@@ -330,5 +370,5 @@ For the changelog of earlier versions, please refer to the separate changelog.tx
 
 == Upgrade Notice ==
 
-= 4.3.1 =
-Adds settings search, improves FULLTEXT index consistency and settings defaults, and fixes settings layout, database error handling, and the Pro indexing wizard.
+= 4.4.0 =
+Adds experimental WPBakery, Elementor and Bricks integrations (Pro), a precomputed taxonomy score option, and fixes exclude-terms matching, cache collisions, and uninstall of paired free/Pro installs.

@@ -198,11 +198,10 @@ class Settings {
 	 * Raw defaults for every registered setting, keyed by option ID.
 	 *
 	 * Must exactly match what `crp_settings_defaults()` computes from
-	 * {@see self::get_registered_settings()}, but without building the full
-	 * (translated) field definitions. Values are pre-normalized: checkboxes are
-	 * `1`/`0`, not `true`/`false`. `thumb_default`'s default is computed via
-	 * `Display::get_default_thumbnail()` and is represented as `''` here since
-	 * its real value cannot be known statically.
+	 * get_registered_settings(), but without building the full (translated) field
+	 * definitions. Values are pre-normalized: checkboxes are `1`/`0`, not `true`/`false`,
+	 * and `thumb_default` is represented as `''` since its real value (from
+	 * `Display::get_default_thumbnail()`) can't be known statically.
 	 *
 	 * @since 4.3.0
 	 *
@@ -313,6 +312,33 @@ class Settings {
 			'post_thumb_op_feed'           => 'text_only',
 			'thumb_width_feed'             => '250',
 			'thumb_height_feed'            => '250',
+			'wc_header'                    => '',
+			'wc_enable'                    => 1,
+			'wc_indexing_header'           => '',
+			'wc_index_sku'                 => 1,
+			'wc_index_attributes'          => 1,
+			'wc_index_purchase_note'       => 0,
+			'wc_display_header'            => '',
+			'wc_display_mode'              => 'replace',
+			'wc_limit'                     => 4,
+			'wc_related_heading'           => 'Related products',
+			'wc_output_header'             => '',
+			'wc_show_thumbnail'            => 1,
+			'wc_show_sale_flash'           => 1,
+			'wc_show_price'                => 1,
+			'wc_show_rating'               => 1,
+			'wc_show_add_to_cart'          => 1,
+			'wc_filter_header'             => '',
+			'wc_exclude_hidden'            => 1,
+			'wc_exclude_out_of_stock'      => 0,
+			'wc_same_category'             => 1,
+			'wc_same_tag'                  => 0,
+			'wc_cart_header'               => '',
+			'wc_cart_enable'               => 0,
+			'wc_cart_limit'                => 4,
+			'wc_cart_upper_bound_pct'      => 20,
+			'wc_cart_heading'              => '',
+			'wc_cart_hook'                 => 'woocommerce_after_cart_table',
 		);
 	}
 
@@ -965,15 +991,15 @@ class Settings {
 			),
 			'include_words'             => array(
 				'id'      => 'include_words',
-				'name'    => esc_html__( 'Include only posts that contain these words', 'contextual-related-posts' ),
-				'desc'    => esc_html__( 'If entered, the related posts will include only posts that contain any of the specified words. Separate words with commas and no spaces. e.g. samsung,apple,nokia', 'contextual-related-posts' ),
+				'name'    => esc_html__( 'Also match posts that contain these words', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'If entered, posts containing any of these words are matched in addition to the contextual matches, and are ranked higher. Separate words with commas and no spaces. e.g. samsung,apple,nokia', 'contextual-related-posts' ),
 				'type'    => 'csv',
 				'default' => '',
 			),
 			'exclude_words'             => array(
 				'id'      => 'exclude_words',
 				'name'    => esc_html__( 'Exclude posts that contain these words', 'contextual-related-posts' ),
-				'desc'    => esc_html__( 'If entered, the related posts will exclude posts that contain any of the specified words. Separate words with commas and no spaces. e.g. samsung,apple,nokia', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'If entered, the related posts will exclude posts that contain any of the specified terms. Separate terms with commas. Terms may contain spaces. e.g. apple,black friday,coding', 'contextual-related-posts' ),
 				'type'    => 'csv',
 				'default' => '',
 			),
@@ -1319,7 +1345,7 @@ class Settings {
 			),
 			'wc_output_header'        => array(
 				'id'   => 'wc_output_header',
-				'name' => '<h3>' . esc_html__( 'Output Customisation', 'contextual-related-posts' ) . '</h3>',
+				'name' => '<h3>' . esc_html__( 'Output Customization', 'contextual-related-posts' ) . '</h3>',
 				'desc' => esc_html__( 'Control what is displayed in the related products list.', 'contextual-related-posts' ),
 				'type' => 'header',
 			),

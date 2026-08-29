@@ -285,15 +285,42 @@ class Helpers {
 			$search   = array_merge( $search, array( 'from', 'where' ) );
 		}
 
-		// Build regex pattern for all stopwords at once.
-		$pattern = '/\b(' . implode( '|', array_map( 'preg_quote', (array) $search ) ) . ')\b/ui';
+		// Drop empty entries so a trailing comma in a translated list cannot create an empty alternation branch.
+		$search = array_filter(
+			array_map( 'trim', array_map( 'strval', (array) $search ) ),
+			static function ( $word ) {
+				return '' !== $word;
+			}
+		);
 
-		// Remove stopwords.
-		$output = preg_replace( $pattern, $replace, (string) $subject );
+		// Entities survive wp_strip_all_tags(), so &amp;/&nbsp;/&hellip; would otherwise be indexed as the words amp/nbsp/hellip.
+		$output = html_entity_decode( (string) $subject, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$output = str_replace( "\xc2\xa0", ' ', $output );
 
-		// Remove single characters and normalize whitespace.
-		$output = preg_replace( '/\b[a-z\-]\b/i', '', $output );
-		$output = preg_replace( '/\s+/', ' ', $output );
+		if ( ! empty( $search ) ) {
+			$quoted  = array_map(
+				static function ( $word ) {
+					return preg_quote( $word, '/' );
+				},
+				$search
+			);
+			$pattern = '/\b(' . implode( '|', $quoted ) . ')\b/ui';
+
+			$replaced = preg_replace( $pattern, $replace, $output );
+			if ( null !== $replaced ) {
+				$output = $replaced;
+			}
+		}
+
+		// Remove single characters and normalize whitespace. /u so \b does not split inside a multi-byte character.
+		$singles = preg_replace( '/\b[a-z\-]\b/iu', '', $output );
+		if ( null !== $singles ) {
+			$output = $singles;
+		}
+		$collapsed = preg_replace( '/\s+/', ' ', $output );
+		if ( null !== $collapsed ) {
+			$output = $collapsed;
+		}
 
 		return trim( $output );
 	}
@@ -422,5 +449,28 @@ class Helpers {
 
 		$cached_message = '';
 		return $cached_message;
+	}
+
+	/**
+	 * Retrieve sites without WordPress's default 100-site cap.
+	 *
+	 * `get_sites()` defaults to `number => 100`. Passing `number => 0` removes the
+	 * LIMIT so network-wide operations see every site.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param array $args Optional. Arguments passed to get_sites().
+	 * @return array Array of WP_Site objects, IDs, or fields depending on $args.
+	 */
+	public static function get_sites( array $args = array() ): array {
+		if ( ! is_multisite() ) {
+			return array();
+		}
+
+		if ( ! isset( $args['number'] ) ) {
+			$args['number'] = 0;
+		}
+
+		return get_sites( $args );
 	}
 }

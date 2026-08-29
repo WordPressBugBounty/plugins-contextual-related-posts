@@ -10,6 +10,12 @@ namespace WebberZone\Contextual_Related_Posts;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+if ( ! function_exists( 'fs_dynamic_init' ) ) {
+	$fs_start = __DIR__ . '/vendor/freemius/wordpress-sdk/start.php';
+	if ( file_exists( $fs_start ) ) {
+		require $fs_start;
+	}
+}
 if ( ! function_exists( __NAMESPACE__ . '\\crp_freemius' ) ) {
 	/**
 	 * Initialize Freemius SDK.
@@ -21,8 +27,6 @@ if ( ! function_exists( __NAMESPACE__ . '\\crp_freemius' ) ) {
 			if ( ! defined( 'WP_FS__PRODUCT_15040_MULTISITE' ) ) {
 				define( 'WP_FS__PRODUCT_15040_MULTISITE', true );
 			}
-			// Include Freemius SDK.
-			require_once __DIR__ . '/vendor/freemius/start.php';
 			$crp_freemius = \fs_dynamic_init(
 				array(
 					'id'               => '15040',

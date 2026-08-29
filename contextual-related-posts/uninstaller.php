@@ -20,6 +20,7 @@ if ( is_multisite() ) {
 			'archived' => 0,
 			'spam'     => 0,
 			'deleted'  => 0,
+			'number'   => 0,
 		)
 	);
 
@@ -40,6 +41,10 @@ if ( is_multisite() ) {
  */
 function crp_delete_data() {
 	global $wpdb;
+
+	if ( is_plugin_active( 'contextual-related-posts/contextual-related-posts.php' ) ) {
+		return;
+	}
 
 	$settings = get_option( 'crp_settings' );
 
