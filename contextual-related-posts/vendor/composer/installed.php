@@ -1,8 +1,8 @@
 <?php return array(
     'root' => array(
-        'name' => 'webberzone/contextual-related-posts-pro',
-        'pretty_version' => '4.4.0',
-        'version' => '4.4.0.0',
+        'name' => 'webberzone/contextual-related-posts',
+        'pretty_version' => '4.4.1',
+        'version' => '4.4.1.0',
         'reference' => null,
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
@@ -19,9 +19,9 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'webberzone/contextual-related-posts-pro' => array(
-            'pretty_version' => '4.4.0',
-            'version' => '4.4.0.0',
+        'webberzone/contextual-related-posts' => array(
+            'pretty_version' => '4.4.1',
+            'version' => '4.4.1.0',
             'reference' => null,
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',

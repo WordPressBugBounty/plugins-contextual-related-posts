@@ -2,7 +2,7 @@
 Tags: related posts, related, contextual related posts, similar posts, seo
 Contributors: webberzone, ajay
 Donate link: https://wzn.io/donate-crp
-Stable tag: 4.4.0
+Stable tag: 4.4.1
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -204,6 +204,22 @@ The plugin also handles SSL, resizing, and fallback mechanisms automatically for
 
 == Changelog ==
 
+= 4.4.1 =
+
+*Release Date - 5 September 2026*
+
+* Features:
+	* Added a Features tab and Feature Manager for disabling unused plugin components without changing existing defaults.
+	* [Pro] Added independent controls for the Query Loop, Featured Image, Related Posts Pro, page builder, bot protection, lazy loading, custom tables, and WooCommerce modules.
+
+* Fixed:
+	* Hardened settings sanitization for users without the `unfiltered_html` capability.
+	* Prevented password-protected post excerpts from being served through the shared HTML cache.
+	* Hardened Query Loop REST meta filtering and taxonomy searches against unauthorized or private data access.
+	* Fixed cache invalidation, dry-run cleanup, persistent object-cache invalidation, and collisions for ordered IDs and taxonomy slugs.
+	* [Pro] Fixed custom-table indexing after REST metadata and taxonomy updates, and moved large term refreshes to bounded background batches.
+	* [Pro] Prevented Query Loop block callbacks from accumulating across repeated renders.
+
 = 4.4.0 =
 
 *Release Date - 29 August 2026*
@@ -370,5 +386,5 @@ For the changelog of earlier versions, please refer to the separate changelog.tx
 
 == Upgrade Notice ==
 
-= 4.4.0 =
-Adds experimental WPBakery, Elementor and Bricks integrations (Pro), a precomputed taxonomy score option, and fixes exclude-terms matching, cache collisions, and uninstall of paired free/Pro installs.
+= 4.4.1 =
+Adds the Features tab and Feature Manager for selectively disabling unused plugin components. All features remain enabled by default.

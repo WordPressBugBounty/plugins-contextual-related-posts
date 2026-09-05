@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit2a14d5e34e4e88208df083e7963f426c
+class ComposerStaticInitContextualRelatedPosts
 {
     public static $files = array (
         '8d50dc88e56bace65e1e72f6017983ed' => __DIR__ . '/..' . '/freemius/wordpress-sdk/start.php',
@@ -17,7 +17,7 @@ class ComposerStaticInit2a14d5e34e4e88208df083e7963f426c
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->classMap = ComposerStaticInit2a14d5e34e4e88208df083e7963f426c::$classMap;
+            $loader->classMap = ComposerStaticInitContextualRelatedPosts::$classMap;
 
         }, null, ClassLoader::class);
     }
