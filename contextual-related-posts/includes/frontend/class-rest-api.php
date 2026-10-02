@@ -203,8 +203,19 @@ class REST_API extends \WP_REST_Controller {
 				'description' => __( 'Taxonomy IDs from which posts are excluded (comma separated)', 'contextual-related-posts' ),
 				'type'        => 'string',
 			),
+			'lang'               => array(
+				'description' => __( 'TranslatePress language code to render the response in.', 'contextual-related-posts' ),
+				'type'        => 'string',
+			),
 		);
 
+		/**
+		 * Filters the query parameters accepted by the related posts REST endpoint.
+		 *
+		 * @since 3.1.0
+		 *
+		 * @param array $args Collection parameters, keyed by parameter name.
+		 */
 		return apply_filters( 'crp_rest_api_get_item_params', $args );
 	}
 
@@ -242,7 +253,7 @@ class REST_API extends \WP_REST_Controller {
 		$args    = array();
 
 		foreach ( $allowed as $key ) {
-			if ( in_array( $key, array( 'id', 'postid' ), true ) ) {
+			if ( in_array( $key, array( 'id', 'postid', 'lang' ), true ) ) {
 				continue;
 			}
 

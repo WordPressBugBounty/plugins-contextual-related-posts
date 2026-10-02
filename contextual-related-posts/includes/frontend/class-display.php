@@ -127,7 +127,7 @@ class Display {
 		// Support caching to speed up retrieval.
 		$meta_key = Cache::get_key( $args );
 		if ( self::should_cache( $args ) ) {
-			$output = Cache::get_cache( $post->ID, $meta_key, 'html' );
+			$output = Cache::get_cache( $post->ID, $meta_key, 'html', $args );
 			if ( $output ) {
 				return $output;
 			}
@@ -158,7 +158,7 @@ class Display {
 		$custom_template = apply_filters( 'crp_custom_template', null, $results, $args );
 		if ( ! empty( $custom_template ) ) {
 			if ( self::should_cache( $args ) ) {
-				Cache::set_cache( $post->ID, $meta_key, $custom_template, 0, 'html' );
+				Cache::set_cache( $post->ID, $meta_key, $custom_template, 0, 'html', $args );
 			}
 			return $custom_template;
 		}
@@ -277,7 +277,7 @@ class Display {
 
 		// Support caching to speed up retrieval.
 		if ( self::should_cache( $args ) ) {
-			Cache::set_cache( $post->ID, $meta_key, $output, 0, 'html' );
+			Cache::set_cache( $post->ID, $meta_key, $output, 0, 'html', $args );
 		}
 
 		/**
@@ -424,7 +424,7 @@ class Display {
 	 * @param int|\WP_Post $post            Post ID or WP_Post instance.
 	 * @param int|string   $excerpt_length  Length of the excerpt in words.
 	 * @param bool         $use_excerpt     Use excerpt instead of content.
-	 * @param string       $more_link_text  Content for when there is more text. Default is null.
+	 * @param string|null  $more_link_text  Content for when there is more text. Null builds the default read-more link.
 	 * @param bool         $strip_stopwords Strip stopwords from the excerpt. Default is false.
 	 * @return string Excerpt
 	 */
@@ -473,7 +473,7 @@ class Display {
 		 *
 		 * @since 3.0.0
 		 *
-		 * @param string   $more_link_text    Read More text.
+		 * @param string|null $more_link_text Read More text. Null builds the default read-more link.
 		 * @param \WP_Post $post              Source Post instance.
 		 */
 		$more_link_text = apply_filters( 'crp_excerpt_more_link_text', $more_link_text, $post );
@@ -746,7 +746,7 @@ class Display {
 
 		$author_info = get_userdata( (int) $result->post_author );
 		$author_link = ( false === $author_info ) ? '' : get_author_posts_url( $author_info->ID );
-		$author_name = ( false === $author_info ) ? '' : ucwords( trim( stripslashes( $author_info->display_name ) ) );
+		$author_name = ( false === $author_info ) ? '' : ucwords( trim( stripslashes( $author_info->display_name ), " \t\n\r\0\x0B" ) );
 
 		/**
 		 * Filter the author name.
@@ -1020,7 +1020,7 @@ class Display {
 
 		if ( count( $paragraphs ) >= abs( $paragraph_id ) ) {
 			foreach ( $paragraphs as $index => &$paragraph ) {
-				if ( trim( $paragraph ) ) {
+				if ( trim( $paragraph, " \t\n\r\0\x0B" ) ) {
 					$paragraph .= $closing_p;
 				}
 

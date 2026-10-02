@@ -55,7 +55,9 @@ final class Hook_Loader {
 	private function register_init_hooks(): void {
 		Hook_Registry::add_action( 'init', array( $this, 'initiate_plugin' ) );
 		Hook_Registry::add_action( 'widgets_init', array( $this, 'register_widgets' ) );
-		Hook_Registry::add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+		if ( Feature_Manager::is_enabled( 'rest_api' ) ) {
+			Hook_Registry::add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+		}
 	}
 
 	/**
@@ -82,6 +84,11 @@ final class Hook_Loader {
 	private function register_cache_hooks(): void {
 		Hook_Registry::add_action( 'wp_trash_post', array( Cache::class, 'maybe_clear_cache_on_trash' ) );
 		Hook_Registry::add_action( 'untrashed_post', array( Cache::class, 'maybe_clear_cache_on_trash' ) );
+		Hook_Registry::add_action( 'wp_after_insert_post', array( Cache::class, 'clear_cache_on_save' ), 10, 4 );
+
+		// After Sync_Manager::flush_pending_sync() so the reverse query sees the synced index.
+		Hook_Registry::add_action( 'shutdown', array( Cache::class, 'process_queue' ), 20 );
+		Hook_Registry::add_action( 'crp_deferred_cache_flush', array( Cache::class, 'deferred_flush' ) );
 	}
 
 	/**
@@ -121,6 +128,10 @@ final class Hook_Loader {
 	 * @since 3.5.0
 	 */
 	public function register_rest_routes(): void {
+		if ( ! Feature_Manager::is_enabled( 'rest_api' ) ) {
+			return;
+		}
+
 		$controller = new Frontend\REST_API();
 		$controller->register_routes();
 	}

@@ -322,7 +322,31 @@ class Helpers {
 			$output = $collapsed;
 		}
 
-		return trim( $output );
+		return trim( $output, " \t\n\r\0\x0B" );
+	}
+
+	/**
+	 * Parse the post_types setting, which may be an array, a comma-separated list or a query string.
+	 *
+	 * @since 4.5.0
+	 *
+	 * @param array|string|null $post_types Post types to parse.
+	 * @return array Array of post type names. Falls back to all public post types.
+	 */
+	public static function parse_post_types( $post_types ): array {
+		if ( ! empty( $post_types ) && is_array( $post_types ) ) {
+			$parsed = $post_types;
+		} elseif ( ! empty( $post_types ) && false === strpos( $post_types, '=' ) ) {
+			$parsed = explode( ',', $post_types );
+		} else {
+			parse_str( (string) $post_types, $parsed );
+		}
+
+		if ( empty( $parsed ) || 'all' === $post_types ) {
+			$parsed = get_post_types( array( 'public' => true ) );
+		}
+
+		return (array) $parsed;
 	}
 
 	/**

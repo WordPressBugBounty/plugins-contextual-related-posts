@@ -7,7 +7,6 @@
 
 namespace WebberZone\Contextual_Related_Posts\Admin;
 
-use WebberZone\Contextual_Related_Posts\Util\Cache;
 use WebberZone\Contextual_Related_Posts\Util\Hook_Registry;
 
 // If this file is called directly, abort.
@@ -105,7 +104,7 @@ class Metabox {
 		wp_nonce_field( 'crp_meta_box', 'crp_meta_box_nonce' );
 
 		// Get the thumbnail settings. The name of the meta key is defined in thumb_meta parameter of the CRP Settings array.
-		$thumb_meta = crp_get_meta( $post->ID, crp_get_option( 'thumb_meta' ) );
+		$thumb_meta = get_post_meta( $post->ID, crp_get_option( 'thumb_meta' ), true );
 		$value      = ( $thumb_meta ) ? $thumb_meta : '';
 
 		// Get related posts specific meta.
@@ -349,9 +348,6 @@ class Metabox {
 		} else {
 			delete_post_meta( $post_id, '_crp_exclude_post_ids' );
 		}
-
-		// Clear cache of current post.
-		Cache::delete_by_post_id( $post_id );
 
 		/**
 		 * Action triggered when saving Contextual Related Posts meta box settings

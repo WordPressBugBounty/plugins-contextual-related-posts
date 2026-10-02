@@ -11,6 +11,7 @@
 namespace WebberZone\Contextual_Related_Posts\Admin;
 
 use WebberZone\Contextual_Related_Posts\Util\Cache;
+use WebberZone\Contextual_Related_Posts\Util\Helpers;
 use WebberZone\Contextual_Related_Posts\Util\Hook_Registry;
 
 // If this file is called directly, abort.
@@ -73,6 +74,7 @@ class Settings {
 		Hook_Registry::add_filter( 'plugin_action_links_' . plugin_basename( WZ_CRP_PLUGIN_FILE ), array( $this, 'plugin_actions_links' ) );
 		Hook_Registry::add_filter( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 99 );
 		Hook_Registry::add_filter( self::$prefix . '_settings_sanitize', array( $this, 'change_settings_on_save' ), 99 );
+		Hook_Registry::add_action( 'delete_option', array( $this, 'clear_cache_on_settings_reset' ) );
 		Hook_Registry::add_filter( self::$prefix . '_after_setting_output', array( $this, 'display_admin_thumbnail' ), 10, 2 );
 		Hook_Registry::add_filter( self::$prefix . '_setting_field_description', array( $this, 'reset_default_thumb_setting' ), 10, 2 );
 
@@ -131,6 +133,9 @@ class Settings {
 			'modified_legend'      => esc_html__( 'Setting modified from its default value', 'contextual-related-posts' ),
 			'default_label'        => esc_html__( 'Default', 'contextual-related-posts' ),
 			'default_none'         => esc_html__( 'None', 'contextual-related-posts' ),
+			'repeater_move_up'     => esc_html__( 'Move item up', 'contextual-related-posts' ),
+			'repeater_move_down'   => esc_html__( 'Move item down', 'contextual-related-posts' ),
+			'repeater_remove_item' => esc_html__( 'Remove item', 'contextual-related-posts' ),
 		);
 
 		/**
@@ -212,9 +217,13 @@ class Settings {
 	public static function get_defaults() {
 		return array(
 			'features_header'                => '',
+			'features_api_header'            => '',
 			'features_display_header'        => '',
 			'enable_blocks'                  => 1,
 			'enable_legacy_widgets'          => 1,
+			'enable_rest_api'                => 1,
+			'enable_abilities_api'           => 1,
+			'enable_advanced_block'          => 1,
 			'enable_query_block'             => 1,
 			'enable_featured_image_block'    => 1,
 			'enable_related_posts_pro_block' => 1,
@@ -260,6 +269,7 @@ class Settings {
 			'ordering'                       => 'relevance',
 			'random_order'                   => 0,
 			'relevance_header'               => '',
+			'relevance_threshold'            => 0,
 			'weight_title'                   => 10,
 			'weight_content'                 => 0,
 			'weight_excerpt'                 => 0,
@@ -267,6 +277,8 @@ class Settings {
 			'weight_taxonomy_post_tag'       => 0,
 			'weight_taxonomy_default'        => 0,
 			'weight_primary_term_boost'      => 0,
+			'weight_recency'                 => 0,
+			'recency_halflife'               => 180,
 			'use_precomputed_tax_score'      => 0,
 			'match_content_words'            => 0,
 			'post_filter_header'             => '',
@@ -385,6 +397,22 @@ class Settings {
 		 * @param array $crp_setings Settings array
 		 */
 		return apply_filters( self::$prefix . '_registered_settings', $settings );
+	}
+
+	/**
+	 * Append an availability note to a recency field description on unsupported databases.
+	 *
+	 * @since 4.5.0
+	 *
+	 * @param string $desc Field description.
+	 * @return string Field description, with a note when the boost cannot run.
+	 */
+	private static function recency_field_desc( string $desc ): string {
+		if ( ! Helpers::is_sqlite() ) {
+			return $desc;
+		}
+
+		return $desc . ' <strong>' . esc_html__( 'Unavailable on SQLite: the date calculation this uses is not supported, so the setting is ignored.', 'contextual-related-posts' ) . '</strong>';
 	}
 
 	/**
@@ -784,6 +812,18 @@ class Settings {
 				'type'    => 'checkbox',
 				'default' => true,
 			),
+			'relevance_threshold'       => array(
+				'id'       => 'relevance_threshold',
+				'name'     => __( 'Minimum relevance (% of best match)', 'contextual-related-posts' ),
+				'desc'     => __( 'Keep a candidate only if its score is at least this percentage of the strongest match for the current post. This is calculated separately for each post; multiple candidates can pass. 0 disables the filter.', 'contextual-related-posts' ),
+				'type'     => 'number',
+				'default'  => 0,
+				'min'      => 0,
+				'max'      => 100,
+				'step'     => 1,
+				'size'     => 'small',
+				'disabled' => Helpers::is_sqlite(),
+			),
 			'weight_title'              => array(
 				'id'      => 'weight_title',
 				'name'    => __( 'Weight for post title', 'contextual-related-posts' ),
@@ -853,6 +893,30 @@ class Settings {
 				'min'     => 0,
 				'size'    => 'small',
 				'pro'     => true,
+			),
+			'weight_recency'            => array(
+				'id'       => 'weight_recency',
+				'name'     => __( 'Recency boost (%)', 'contextual-related-posts' ),
+				'desc'     => self::recency_field_desc( __( 'Blend post age into the ranking. 0 ranks purely by relevance. Raise it to favor fresher content: at a high enough boost a newer post with lower relevance will outrank an older, more relevant one. A strongly relevant old post can still outrank a weakly relevant new one, so raise the boost to favor freshness and raise the half-life below to keep older posts competitive for longer.', 'contextual-related-posts' ) ),
+				'type'     => 'number',
+				'default'  => 0,
+				'min'      => 0,
+				'max'      => 200,
+				'size'     => 'small',
+				'pro'      => true,
+				'disabled' => Helpers::is_sqlite(),
+			),
+			'recency_halflife'          => array(
+				'id'       => 'recency_halflife',
+				'name'     => __( 'Recency half-life (days)', 'contextual-related-posts' ),
+				'desc'     => self::recency_field_desc( __( 'Post age at which half of the recency boost has decayed. Larger values keep older posts competitive for longer. Minimum 1 day. Values below 7 days recalculate hourly instead of daily.', 'contextual-related-posts' ) ),
+				'type'     => 'number',
+				'default'  => 180,
+				'min'      => 1,
+				'max'      => 36500,
+				'size'     => 'small',
+				'pro'      => true,
+				'disabled' => Helpers::is_sqlite(),
 			),
 			'use_precomputed_tax_score' => array(
 				'id'      => 'use_precomputed_tax_score',
@@ -1287,6 +1351,26 @@ class Settings {
 				'desc' => esc_html__( 'Turn off any features you do not use and Contextual Related Posts will not load their code. All features are enabled by default. Disabled blocks are unavailable in the editor and render empty on the front end.', 'contextual-related-posts' ),
 				'type' => 'header',
 			),
+			'features_api_header'            => array(
+				'id'   => 'features_api_header',
+				'name' => '<h3>' . esc_html__( 'API integrations', 'contextual-related-posts' ) . '</h3>',
+				'desc' => esc_html__( 'Control the Contextual Related Posts REST API endpoints and WordPress Abilities API integration.', 'contextual-related-posts' ),
+				'type' => 'header',
+			),
+			'enable_rest_api'                => array(
+				'id'      => 'enable_rest_api',
+				'name'    => esc_html__( 'REST API endpoints', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Registers the contextual-related-posts/v1 endpoints used by integrations and lazy loading. Keep enabled if your blocks, integrations, or lazy loading depend on these endpoints.', 'contextual-related-posts' ),
+				'type'    => 'checkbox',
+				'default' => 1,
+			),
+			'enable_abilities_api'           => array(
+				'id'      => 'enable_abilities_api',
+				'name'    => esc_html__( 'WordPress Abilities API', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Registers Contextual Related Posts abilities with WordPress when the Abilities API is available.', 'contextual-related-posts' ),
+				'type'    => 'checkbox',
+				'default' => 1,
+			),
 			'features_display_header'        => array(
 				'id'   => 'features_display_header',
 				'name' => '<h3>' . esc_html__( 'Content and display', 'contextual-related-posts' ) . '</h3>',
@@ -1306,6 +1390,14 @@ class Settings {
 				'desc'    => esc_html__( 'Registers the classic Related Posts widget. Disable this if you use blocks or shortcodes instead.', 'contextual-related-posts' ),
 				'type'    => 'checkbox',
 				'default' => 1,
+			),
+			'enable_advanced_block'          => array(
+				'id'      => 'enable_advanced_block',
+				'name'    => esc_html__( 'Related Posts Advanced block', 'contextual-related-posts' ),
+				'desc'    => esc_html__( 'Registers the standalone Advanced block, editor preview and related posts patterns.', 'contextual-related-posts' ),
+				'type'    => 'checkbox',
+				'default' => 1,
+				'pro'     => true,
 			),
 			'enable_query_block'             => array(
 				'id'      => 'enable_query_block',
@@ -1994,10 +2086,13 @@ class Settings {
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param  array $settings Settings array.
-	 * @return array Sanitized settings array.
+	 * @param  mixed $settings Settings array, or the reset value.
+	 * @return mixed Sanitized settings array, or the reset value.
 	 */
 	public function change_settings_on_save( $settings ) {
+		if ( ! is_array( $settings ) ) {
+			return $settings;
+		}
 
 		// Sanitize exclude_cat_slugs to save a new entry of exclude_categories.
 		Settings\Settings_Sanitize::sanitize_tax_slugs( $settings, 'exclude_cat_slugs', 'exclude_categories' );
@@ -2038,7 +2133,9 @@ class Settings {
 			$settings['limit'] = '6';
 		}
 
-		if ( isset( $_POST['crp_save_clear_cache'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$flush_cache = isset( $_POST['crp_save_clear_cache'] ) || self::ranking_settings_changed( $settings ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( $flush_cache ) {
 			$count = Cache::delete();
 			add_settings_error(
 				self::$prefix . '-notices',
@@ -2053,6 +2150,107 @@ class Settings {
 		}
 
 		return $settings;
+	}
+
+	/**
+	 * Clear the cache when the settings are reset to their defaults.
+	 *
+	 * The reset path deletes the option and returns before the sanitize filter runs, so the
+	 * ranking can change without change_settings_on_save() ever seeing it.
+	 *
+	 * @since 4.5.0
+	 *
+	 * @param string $option Name of the option being deleted.
+	 * @return void
+	 */
+	public function clear_cache_on_settings_reset( $option ) {
+		if ( $this->settings_key !== $option ) {
+			return;
+		}
+
+		$count = Cache::delete();
+
+		add_settings_error(
+			self::$prefix . '-notices',
+			'crp-cache-cleared',
+			sprintf(
+				/* translators: %d is the number of cache entries cleared. */
+				esc_html__( 'Cache cleared. %d entries removed.', 'contextual-related-posts' ),
+				$count
+			),
+			'updated'
+		);
+	}
+
+	/**
+	 * Whether any ranking-affecting setting changed in the values being saved.
+	 *
+	 * Cached related posts are keyed on the query arguments, not on the site settings, so a change
+	 * to a weight or to the recency boost is invisible to the cache and would otherwise only
+	 * surface as each entry expired.
+	 *
+	 * @since 4.5.0
+	 *
+	 * @param array $settings Sanitized settings being saved.
+	 * @return bool True when a ranking-affecting value differs from the stored one.
+	 */
+	private static function ranking_settings_changed( array $settings ): bool {
+		$keys = array(
+			'relevance_threshold',
+			'weight_title',
+			'weight_content',
+			'weight_excerpt',
+			'weight_taxonomy_category',
+			'weight_taxonomy_post_tag',
+			'weight_taxonomy_default',
+			'weight_primary_term_boost',
+			'weight_recency',
+			'recency_halflife',
+		);
+
+		/**
+		 * Filters the settings that flush the cache when they change on save.
+		 *
+		 * Register any setting that changes which posts a query returns, or in which order.
+		 *
+		 * @since 4.5.0
+		 *
+		 * @param string[] $keys     Setting keys that invalidate cached results.
+		 * @param array    $settings Sanitized settings being saved.
+		 */
+		$keys = (array) apply_filters( 'crp_cache_busting_settings', $keys, $settings );
+
+		foreach ( $keys as $key ) {
+			if ( ! array_key_exists( $key, $settings ) ) {
+				continue;
+			}
+
+			// Falls back to the registered default: a key not yet persisted is not a change.
+			$old = \crp_get_option( $key );
+			$new = $settings[ $key ];
+
+			// Numbers arrive from the form as strings, so a stored int 0 against a posted '0' is
+			// not a change; anything non-numeric is compared as text.
+			if ( is_numeric( $old ) && is_numeric( $new ) ) {
+				if ( (float) $old !== (float) $new ) {
+					return true;
+				}
+				continue;
+			}
+
+			if ( is_scalar( $old ) && is_scalar( $new ) ) {
+				if ( (string) $old !== (string) $new ) {
+					return true;
+				}
+				continue;
+			}
+
+			if ( $old !== $new ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -2182,7 +2380,7 @@ class Settings {
 			$s = explode( ',', $s );
 			$s = $s[ count( $s ) - 1 ];
 		}
-		$s = trim( $s );
+		$s = trim( $s, " \t\n\r\0\x0B" );
 
 		/**
 	* This filter has been defined in /wp-admin/includes/ajax-actions.php
@@ -2259,7 +2457,7 @@ class Settings {
 			$search_term = explode( ',', $search_term );
 			$search_term = $search_term[ count( $search_term ) - 1 ];
 		}
-		$search_term = trim( $search_term );
+		$search_term = trim( $search_term, " \t\n\r\0\x0B" );
 
 		if ( 'meta_keys' === $endpoint ) {
 			if ( ! current_user_can( 'manage_options' ) ) {
