@@ -2,7 +2,7 @@
 Tags: related posts, related, contextual related posts, similar posts, seo
 Contributors: webberzone, ajay
 Donate link: https://wzn.io/donate-crp
-Stable tag: 4.5.1
+Stable tag: 4.5.2
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -212,6 +212,19 @@ The plugin also handles SSL, resizing, and fallback mechanisms automatically for
 
 == Changelog ==
 
+= 4.5.2 =
+
+Release date: 15 October 2026
+
+**Security**
+
+* Prevented thumbnails from exposing images inside or attached to password-protected posts before the password was entered.
+* Hardened thumbnail URLs to reject unsafe protocols.
+
+**Fixed**
+
+* Malformed custom thumbnail dimensions caused PHP errors during image-size selection.
+
 = 4.5.1 =
 
 Release date: 10 October 2026
@@ -220,8 +233,6 @@ Release date: 10 October 2026
 
 * The deprecated `postid` argument was ignored, so `get_crp_posts()` returned posts related to the current post instead.
 * Missing FULLTEXT indexes were not recreated automatically on the free plugin, and the Tools status report showed the index schema as not installed.
-* [Pro] The Query Loop block ignored the deprecated `postid` query argument.
-* [Pro] The Featured Image block dropped its HTML anchor on WordPress 6.9.
 
 = 4.5.0 =
 
@@ -256,7 +267,6 @@ Release post: https://webberzone.com/announcements/contextual-related-posts-v4-5
 * Cached related posts remained stale after ranking settings changed or settings were reset.
 * Cached related posts remained stale after Quick Edit, Bulk Edit, scheduled publishing and other saves without the plugin's meta box.
 * Cached output could show another language's titles and links on WPML, Polylang and TranslatePress sites.
-* [Pro] Related post images had incorrect or duplicated dimensions, borders or shadows in Query Loop layouts.
 
 = Earlier versions =
 
@@ -264,5 +274,5 @@ For the changelog of earlier versions, please refer to the [releases page on Git
 
 == Upgrade Notice ==
 
-= 4.5.1 =
-Restores correct related posts for legacy postid calls and automatic repair of missing FULLTEXT indexes in Free. Also fixes Pro Query Loop compatibility and Featured Image block anchors.
+= 4.5.2 =
+Security release. Prevents thumbnails from exposing images in password-protected posts and hardens thumbnail URLs. Also fixes errors with malformed thumbnail dimensions. Update recommended.
