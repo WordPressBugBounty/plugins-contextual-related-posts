@@ -2,7 +2,7 @@
 Tags: related posts, related, contextual related posts, similar posts, seo
 Contributors: webberzone, ajay
 Donate link: https://wzn.io/donate-crp
-Stable tag: 4.5.4
+Stable tag: 4.5.6
 Requires at least: 6.9
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -212,6 +212,37 @@ The plugin also handles SSL, resizing, and fallback mechanisms automatically for
 
 == Changelog ==
 
+= 4.5.6 =
+
+Release date: 17 November 2026
+
+**Fixed**
+
+* Related posts queries returned null or unrelated sticky posts when the source post was unavailable.
+
+= 4.5.5 =
+
+Release date: 17 November 2026
+
+**Added**
+
+* Save Changes button in the settings navigation.
+
+**Security**
+
+* Hardened settings imports and related-post matching on protected custom fields.
+* Hardened manual related post searches and selected post titles.
+* [Pro] Restricted block queries and sorting on protected custom fields. Use `crp_block_allowed_meta_keys` to allow specific keys.
+* [Pro] Restricted thumbnail lookups, custom-table maintenance, reindex controls, and Query Loop sort options.
+
+**Fixed**
+
+* A related posts query could cause a fatal error when its source post was unavailable.
+* Partial settings imports removed settings missing from the imported file.
+* Backslashes in Custom CSS, such as icon font codes, were removed on the front end.
+* Thumbnails without alt text omitted the empty `alt` attribute, and related post links with an empty title lacked an accessible name.
+* Changing thumbnail or related meta key settings did not clear the cache.
+
 = 4.5.4 =
 
 Release date: 3 November 2026
@@ -292,5 +323,5 @@ For the changelog of earlier versions, please refer to the [releases page on Git
 
 == Upgrade Notice ==
 
-= 4.5.4 =
-Security release. Update recommended.
+= 4.5.6 =
+Fixes related post queries when a source post is unavailable.

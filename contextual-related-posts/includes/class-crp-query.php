@@ -35,6 +35,12 @@ if ( ! class_exists( 'CRP_Query' ) ) :
 			// Get query instance.
 			$crp = new CRP_Core_Query( $args );
 
+			if ( ! $crp->source_post instanceof WP_Post ) {
+				parent::__construct();
+				$this->posts = array();
+				return;
+			}
+
 			// Register query filters.
 			$this->register_query_filters( $crp );
 

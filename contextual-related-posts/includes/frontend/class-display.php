@@ -63,11 +63,13 @@ class Display {
 		// Sanitize args.
 		$args = Helpers::sanitize_args( $args );
 
-		// Content (shortcode, block, builders) may not point thumbnails at protected meta other than the saved setting.
+		// Normalise before the cache key so a refused protected key shares the saved-key entry; Media_Handler enforces the same rule.
 		foreach ( array( 'thumb_meta', 'acf_field' ) as $meta_arg ) {
-			$saved = (string) crp_get_option( $meta_arg, '' );
-			if ( ! empty( $args[ $meta_arg ] ) && $saved !== $args[ $meta_arg ] && is_protected_meta( (string) $args[ $meta_arg ], 'post' ) ) {
-				$args[ $meta_arg ] = $saved;
+			if ( ! empty( $args[ $meta_arg ] ) && is_protected_meta( (string) $args[ $meta_arg ], 'post' ) ) {
+				$saved = (string) crp_get_option( $meta_arg, '' );
+				if ( $saved !== $args[ $meta_arg ] ) {
+					$args[ $meta_arg ] = $saved;
+				}
 			}
 		}
 
@@ -868,7 +870,9 @@ class Display {
 		$link            = self::get_permalink( $args, $result );
 		$link_attributes = self::link_attributes( $args, $result );
 
-		$output .= '<a href="' . $link . '" ' . $link_attributes . ' class="crp_link ' . $result->post_type . '-' . $result->ID . '">';
+		$aria_label = '' === trim( wp_strip_all_tags( (string) $title ), " \t\n\r\0\x0B" ) ? ' aria-label="' . esc_attr( __( 'Untitled post', 'contextual-related-posts' ) ) . '"' : '';
+
+		$output .= '<a href="' . $link . '" ' . $link_attributes . $aria_label . ' class="crp_link ' . $result->post_type . '-' . $result->ID . '">';
 
 		if ( 'after' === $args['post_thumb_op'] ) {
 			$output .= '<span class="crp_title">' . $title . '</span>'; // Add title when required by settings.
